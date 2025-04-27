@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese Flashcards</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        .card-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .card-half {
+            width: 100%;
+            height: 200px;
+            font-size: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            text-align: center;
+            background-color: #f9f9f9;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            padding: 20px;
+            box-sizing: border-box;
+            visibility: visible;
+        }
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            min-width: 120px;
+        }
+        #shuffleBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #nextBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #revealBtn {
+            background-color: #FF9800;
+            color: white;
+        }
+        #flipBtn {
+            background-color: #2196F3;
+            color: white;
+        }
+        #modeBtn {
+            background-color: #9C27B0;
+            color: white;
+        }
+        #levelBtn {
+            background-color: #607D8B;
+            color: white;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .pinyin {
+            font-size: 60%;
+            color: #666;
+            margin-left: 10px;
+        }
+        .definition {
+            font-size: 40%;
+            color: #888;
+            margin-top: 10px;
+        }
+        .hidden {
+            visibility: hidden;
+            transition: visibility 0.01s ease;
+        }
+        .progress {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .stroke-order-container {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f8f8f8;
+        }
+        .stroke-order-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .stroke-order-link {
+            color: #2196F3;
+            text-decoration: none;
+            border: 1px solid #2196F3;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.01s;
+        }
+        .stroke-order-link:hover {
+            background-color: #2196F3;
+            color: white;
+        }
+        #strokeOrderBtn {
+            background-color: #FF5722;
+            color: white;
+        }
+        #toggleListBtn {
+            background-color: #FF9800;
+            color: white;
+            margin-left: 10px;
+        }
+        #toggleListBtn.in-list {
+            background-color: #f44336;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Chinese Flashcards</h1>
+    
+    <div class="buttons">
+        <button id="levelBtn">Current Level: HSK 1</button>
+        <button id="flipBtn">Showing: Character → Pinyin</button>
+        <button id="modeBtn">Mode: Character ↔ Pinyin</button>
+        <button id="shuffleBtn">Shuffle</button>
+        <button id="nextBtn">Next</button>
+        <button id="revealBtn">Reveal</button>
+        <button id="strokeOrderBtn">Stroke Order</button>
+        <button id="toggleListBtn">Add to List</button>
+        <button id="clearListBtn">Clear List</button>
+
+    </div>
+    
+    <div class="progress" id="progress">0/150 words shown</div>
+    <div class="stroke-order-container hidden" id="strokeOrderContainer">
+        <div>Stroke order:</div>
+        <div class="stroke-order-links" id="strokeOrderLinks"></div>
+    </div>
+    
+    <div class="card-container">
+        <div class="card-half" id="topCard"></div>
+        <div class="card-half hidden" id="bottomCard"></div>
+    </div>
+
+    <script>
+        // HSK Vocabulary Databases
+        const dictionaries = [
+            // HSK 1
+            [
+            { char: "爱", pinyin: "ài", definition: "love" },
+            { char: "八", pinyin: "bā", definition: "eight" },
+            { char: "爸爸", pinyin: "bàba", definition: "father" },
+            { char: "杯子", pinyin: "bēizi", definition: "cup" },
+            { char: "北京", pinyin: "Běijīng", definition: "Beijing" },
+            { char: "本", pinyin: "běn", definition: "book" },
+            { char: "不", pinyin: "bù", definition: "no" },
+            { char: "不客气", pinyin: "bú kèqi", definition: "you're welcome" },
+            { char: "菜", pinyin: "cài", definition: "dish" },
+            { char: "茶", pinyin: "chá", definition: "tea" },
+            { char: "吃", pinyin: "chī", definition: "eat" },
+            { char: "出租车", pinyin: "chūzūchē", definition: "taxi" },
+            { char: "打电话", pinyin: "dǎ diànhuà", definition: "make a call" },
+            { char: "大", pinyin: "dà", definition: "big" },
+            { char: "的", pinyin: "de", definition: "(possessive)" },
+            { char: "点", pinyin: "diǎn", definition: "o'clock" },
+            { char: "电脑", pinyin: "diànnǎo", definition: "computer" },
+            { char: "电视", pinyin: "diànshì", definition: "TV" },
+            { char: "电影", pinyin: "diànyǐng", definition: "movie" },
+            { char: "东西", pinyin: "dōngxi", definition: "thing" },
+            { char: "都", pinyin: "dōu", definition: "all" },
+            { char: "读", pinyin: "dú", definition: "read" },
+            { char: "对不起", pinyin: "duìbuqǐ", definition: "sorry" },
+            { char: "多", pinyin: "duō", definition: "many" },
+            { char: "多少", pinyin: "duōshao", definition: "how many" },
+            { char: "儿子", pinyin: "érzi", definition: "son" },
+            { char: "二", pinyin: "èr", definition: "two" },
+            { char: "饭馆", pinyin: "fànguǎn", definition: "restaurant" },
+            { char: "飞机", pinyin: "fēijī", definition: "airplane" },
+            { char: "分钟", pinyin: "fēnzhōng", definition: "minute" },
+            { char: "高兴", pinyin: "gāoxìng", definition: "happy" },
+            { char: "个", pinyin: "gè", definition: "(measure word)" },
+            { char: "工作", pinyin: "gōngzuò", definition: "work" },
+            { char: "狗", pinyin: "gǒu", definition: "dog" },
+            { char: "汉语", pinyin: "Hànyǔ", definition: "Chinese" },
+            { char: "好", pinyin: "hǎo", definition: "good" },
+            { char: "号", pinyin: "hào", definition: "number" },
+            { char: "喝", pinyin: "hē", definition: "drink" },
+            { char: "和", pinyin: "hé", definition: "and" },
+            { char: "很", pinyin: "hěn", definition: "very" },
+            { char: "后面", pinyin: "hòumian", definition: "back" },
+            { char: "回", pinyin: "huí", definition: "return" },
+            { char: "会", pinyin: "huì", definition: "can" },
+            { char: "几", pinyin: "jǐ", definition: "how many" },
+            { char: "家", pinyin: "jiā", definition: "home" },
+            { char: "叫", pinyin: "jiào", definition: "call" },
+            { char: "今天", pinyin: "jīntiān", definition: "today" },
+            { char: "九", pinyin: "jiǔ", definition: "nine" },
+            { char: "开", pinyin: "kāi", definition: "open" },
+            { char: "看", pinyin: "kàn", definition: "look" },
+            { char: "看见", pinyin: "kànjiàn", definition: "see" },
+            { char: "块", pinyin: "kuài", definition: "yuan" },
+            { char: "来", pinyin: "lái", definition: "come" },
+            { char: "老师", pinyin: "lǎoshī", definition: "teacher" },
+            { char: "了", pinyin: "le", definition: "(completed)" },
+            { char: "冷", pinyin: "lěng", definition: "cold" },
+            { char: "里", pinyin: "lǐ", definition: "inside" },
+            { char: "六", pinyin: "liù", definition: "six" },
+            { char: "妈妈", pinyin: "māma", definition: "mother" },
+            { char: "吗", pinyin: "ma", definition: "(question)" },
+            { char: "买", pinyin: "mǎi", definition: "buy" },
+            { char: "猫", pinyin: "māo", definition: "cat" },
+            { char: "没关系", pinyin: "méi guānxi", definition: "it's okay" },
+            { char: "米饭", pinyin: "mǐfàn", definition: "rice" },
+            { char: "名字", pinyin: "míngzi", definition: "name" },
+            { char: "明天", pinyin: "míngtiān", definition: "tomorrow" },
+            { char: "哪", pinyin: "nǎ", definition: "which" },
+            { char: "哪儿", pinyin: "nǎr", definition: "where" },
+            { char: "那", pinyin: "nà", definition: "that" },
+            { char: "呢", pinyin: "ne", definition: "(question)" },
+            { char: "能", pinyin: "néng", definition: "can" },
+            { char: "你", pinyin: "nǐ", definition: "you" },
+            { char: "年", pinyin: "nián", definition: "year" },
+            { char: "女儿", pinyin: "nǚ'ér", definition: "daughter" },
+            { char: "朋友", pinyin: "péngyou", definition: "friend" },
+            { char: "漂亮", pinyin: "piàoliang", definition: "pretty" },
+            { char: "苹果", pinyin: "píngguǒ", definition: "apple" },
+            { char: "七", pinyin: "qī", definition: "seven" },
+            { char: "钱", pinyin: "qián", definition: "money" },
+            { char: "前面", pinyin: "qiánmian", definition: "front" },
+            { char: "请", pinyin: "qǐng", definition: "please" },
+            { char: "去", pinyin: "qù", definition: "go" },
+            { char: "热", pinyin: "rè", definition: "hot" },
+            { char: "人", pinyin: "rén", definition: "person" },
+            { char: "认识", pinyin: "rènshi", definition: "know" },
+            { char: "日", pinyin: "rì", definition: "day" },
+            { char: "三", pinyin: "sān", definition: "three" },
+            { char: "商店", pinyin: "shāngdiàn", definition: "shop" },
+            { char: "上", pinyin: "shàng", definition: "up" },
+            { char: "上午", pinyin: "shàngwǔ", definition: "morning" },
+            { char: "少", pinyin: "shǎo", definition: "few" },
+            { char: "谁", pinyin: "shéi", definition: "who" },
+            { char: "什么", pinyin: "shénme", definition: "what" },
+            { char: "十", pinyin: "shí", definition: "ten" },
+            { char: "时候", pinyin: "shíhou", definition: "time" },
+            { char: "是", pinyin: "shì", definition: "be" },
+            { char: "书", pinyin: "shū", definition: "book" },
+            { char: "水", pinyin: "shuǐ", definition: "water" },
+            { char: "水果", pinyin: "shuǐguǒ", definition: "fruit" },
+            { char: "睡觉", pinyin: "shuìjiào", definition: "sleep" },
+            { char: "说", pinyin: "shuō", definition: "speak" },
+            { char: "四", pinyin: "sì", definition: "four" },
+            { char: "岁", pinyin: "suì", definition: "years old" },
+            { char: "他", pinyin: "tā", definition: "he" },
+            { char: "她", pinyin: "tā", definition: "she" },
+            { char: "太", pinyin: "tài", definition: "too" },
+            { char: "天气", pinyin: "tiānqì", definition: "weather" },
+            { char: "听", pinyin: "tīng", definition: "listen" },
+            { char: "同学", pinyin: "tóngxué", definition: "classmate" },
+            { char: "喂", pinyin: "wèi", definition: "hello" },
+            { char: "我", pinyin: "wǒ", definition: "I" },
+            { char: "我们", pinyin: "wǒmen", definition: "we" },
+            { char: "五", pinyin: "wǔ", definition: "five" },
+            { char: "喜欢", pinyin: "xǐhuan", definition: "like" },
+            { char: "下", pinyin: "xià", definition: "down" },
+            { char: "下午", pinyin: "xiàwǔ", definition: "afternoon" },
+            { char: "下雨", pinyin: "xiàyǔ", definition: "rain" },
+            { char: "先生", pinyin: "xiānsheng", definition: "Mr." },
+            { char: "现在", pinyin: "xiànzài", definition: "now" },
+            { char: "想", pinyin: "xiǎng", definition: "think" },
+            { char: "小", pinyin: "xiǎo", definition: "small" },
+            { char: "小姐", pinyin: "xiǎojie", definition: "Miss" },
+            { char: "些", pinyin: "xiē", definition: "some" },
+            { char: "写", pinyin: "xiě", definition: "write" },
+            { char: "谢谢", pinyin: "xièxie", definition: "thanks" },
+            { char: "星期", pinyin: "xīngqī", definition: "week" },
+            { char: "学生", pinyin: "xuésheng", definition: "student" },
+            { char: "学习", pinyin: "xuéxí", definition: "study" },
+            { char: "学校", pinyin: "xuéxiào", definition: "school" },
+            { char: "一", pinyin: "yī", definition: "one" },
+            { char: "衣服", pinyin: "yīfu", definition: "clothes" },
+            { char: "医生", pinyin: "yīshēng", definition: "doctor" },
+            { char: "医院", pinyin: "yīyuàn", definition: "hospital" },
+            { char: "椅子", pinyin: "yǐzi", definition: "chair" },
+            { char: "有", pinyin: "yǒu", definition: "have" },
+            { char: "月", pinyin: "yuè", definition: "month" },
+            { char: "在", pinyin: "zài", definition: "at" },
+            { char: "再见", pinyin: "zàijiàn", definition: "goodbye" },
+            { char: "怎么", pinyin: "zěnme", definition: "how" },
+            { char: "怎么样", pinyin: "zěnmeyàng", definition: "how about" },
+            { char: "这", pinyin: "zhè", definition: "this" },
+            { char: "中国", pinyin: "Zhōngguó", definition: "China" },
+            { char: "中午", pinyin: "zhōngwǔ", definition: "noon" },
+            { char: "住", pinyin: "zhù", definition: "live" },
+            { char: "桌子", pinyin: "zhuōzi", definition: "table" },
+            { char: "字", pinyin: "zì", definition: "character" },
+            { char: "昨天", pinyin: "zuótiān", definition: "yesterday" },
+            { char: "坐", pinyin: "zuò", definition: "sit" }
+            ],
+            // HSK 2
+            [
+            { char: "吧", pinyin: "ba", definition: "(suggestion particle)" },
+            { char: "白", pinyin: "bái", definition: "white" },
+            { char: "百", pinyin: "bǎi", definition: "hundred" },
+            { char: "帮助", pinyin: "bāngzhù", definition: "help" },
+            { char: "报纸", pinyin: "bàozhǐ", definition: "newspaper" },
+            { char: "比", pinyin: "bǐ", definition: "compare" },
+            { char: "别", pinyin: "bié", definition: "don't" },
+            { char: "宾馆", pinyin: "bīnguǎn", definition: "hotel" },
+            { char: "长", pinyin: "cháng", definition: "long" },
+            { char: "唱歌", pinyin: "chànggē", definition: "sing" },
+            { char: "出", pinyin: "chū", definition: "go out" },
+            { char: "穿", pinyin: "chuān", definition: "wear" },
+            { char: "次", pinyin: "cì", definition: "time (occurrence)" },
+            { char: "从", pinyin: "cóng", definition: "from" },
+            { char: "错", pinyin: "cuò", definition: "wrong" },
+            { char: "打篮球", pinyin: "dǎ lánqiú", definition: "play basketball" },
+            { char: "大家", pinyin: "dàjiā", definition: "everyone" },
+            { char: "到", pinyin: "dào", definition: "arrive" },
+            { char: "得", pinyin: "de", definition: "(structural particle)" },
+            { char: "等", pinyin: "děng", definition: "wait" },
+            { char: "弟弟", pinyin: "dìdi", definition: "younger brother" },
+            { char: "第一", pinyin: "dì yī", definition: "first" },
+            { char: "懂", pinyin: "dǒng", definition: "understand" },
+            { char: "对", pinyin: "duì", definition: "correct" },
+            { char: "房间", pinyin: "fángjiān", definition: "room" },
+            { char: "非常", pinyin: "fēicháng", definition: "very" },
+            { char: "服务员", pinyin: "fúwùyuán", definition: "waiter" },
+            { char: "高", pinyin: "gāo", definition: "tall" },
+            { char: "告诉", pinyin: "gàosu", definition: "tell" },
+            { char: "哥哥", pinyin: "gēge", definition: "older brother" },
+            { char: "给", pinyin: "gěi", definition: "give" },
+            { char: "公共汽车", pinyin: "gōnggòng qìchē", definition: "bus" },
+            { char: "公司", pinyin: "gōngsī", definition: "company" },
+            { char: "贵", pinyin: "guì", definition: "expensive" },
+            { char: "过", pinyin: "guò", definition: "pass" },
+            { char: "还", pinyin: "hái", definition: "still" },
+            { char: "孩子", pinyin: "háizi", definition: "child" },
+            { char: "好吃", pinyin: "hǎochī", definition: "delicious" },
+            { char: "黑", pinyin: "hēi", definition: "black" },
+            { char: "红", pinyin: "hóng", definition: "red" },
+            { char: "火车站", pinyin: "huǒchē zhàn", definition: "train station" },
+            { char: "机场", pinyin: "jīchǎng", definition: "airport" },
+            { char: "鸡蛋", pinyin: "jīdàn", definition: "egg" },
+            { char: "件", pinyin: "jiàn", definition: "(measure word)" },
+            { char: "教室", pinyin: "jiàoshì", definition: "classroom" },
+            { char: "姐姐", pinyin: "jiějie", definition: "older sister" },
+            { char: "介绍", pinyin: "jièshào", definition: "introduce" },
+            { char: "进", pinyin: "jìn", definition: "enter" },
+            { char: "近", pinyin: "jìn", definition: "near" },
+            { char: "就", pinyin: "jiù", definition: "then" },
+            { char: "觉得", pinyin: "juéde", definition: "feel" },
+            { char: "咖啡", pinyin: "kāfēi", definition: "coffee" },
+            { char: "开始", pinyin: "kāishǐ", definition: "start" },
+            { char: "考试", pinyin: "kǎoshì", definition: "exam" },
+            { char: "可能", pinyin: "kěnéng", definition: "possible" },
+            { char: "可以", pinyin: "kěyǐ", definition: "can" },
+            { char: "课", pinyin: "kè", definition: "class" },
+            { char: "快", pinyin: "kuài", definition: "fast" },
+            { char: "快乐", pinyin: "kuàilè", definition: "happy" },
+            { char: "累", pinyin: "lèi", definition: "tired" },
+            { char: "离", pinyin: "lí", definition: "leave" },
+            { char: "两", pinyin: "liǎng", definition: "two" },
+            { char: "路", pinyin: "lù", definition: "road" },
+            { char: "旅游", pinyin: "lǚyóu", definition: "travel" },
+            { char: "卖", pinyin: "mài", definition: "sell" },
+            { char: "慢", pinyin: "màn", definition: "slow" },
+            { char: "忙", pinyin: "máng", definition: "busy" },
+            { char: "每", pinyin: "měi", definition: "every" },
+            { char: "妹妹", pinyin: "mèimei", definition: "younger sister" },
+            { char: "门", pinyin: "mén", definition: "door" },
+            { char: "面条", pinyin: "miàntiáo", definition: "noodles" },
+            { char: "男", pinyin: "nán", definition: "male" },
+            { char: "您", pinyin: "nín", definition: "you (polite)" },
+            { char: "牛奶", pinyin: "niúnǎi", definition: "milk" },
+            { char: "女", pinyin: "nǚ", definition: "female" },
+            { char: "旁边", pinyin: "pángbiān", definition: "beside" },
+            { char: "跑步", pinyin: "pǎobù", definition: "run" },
+            { char: "便宜", pinyin: "piányi", definition: "cheap" },
+            { char: "票", pinyin: "piào", definition: "ticket" },
+            { char: "妻子", pinyin: "qīzi", definition: "wife" },
+            { char: "起床", pinyin: "qǐchuáng", definition: "get up" },
+            { char: "千", pinyin: "qiān", definition: "thousand" },
+            { char: "铅笔", pinyin: "qiānbǐ", definition: "pencil" },
+            { char: "晴", pinyin: "qíng", definition: "sunny" },
+            { char: "去年", pinyin: "qùnián", definition: "last year" },
+            { char: "让", pinyin: "ràng", definition: "let" },
+            { char: "日", pinyin: "rì", definition: "day" },
+            { char: "上班", pinyin: "shàngbān", definition: "go to work" },
+            { char: "身体", pinyin: "shēntǐ", definition: "body" },
+            { char: "生病", pinyin: "shēngbìng", definition: "get sick" },
+            { char: "生日", pinyin: "shēngrì", definition: "birthday" },
+            { char: "时间", pinyin: "shíjiān", definition: "time" },
+            { char: "事情", pinyin: "shìqing", definition: "matter" },
+            { char: "手表", pinyin: "shǒubiǎo", definition: "watch" },
+            { char: "手机", pinyin: "shǒujī", definition: "cell phone" },
+            { char: "说话", pinyin: "shuōhuà", definition: "speak" },
+            { char: "送", pinyin: "sòng", definition: "send" },
+            { char: "虽然", pinyin: "suīrán", definition: "although" },
+            { char: "但是", pinyin: "dànshì", definition: "but" },
+            { char: "它", pinyin: "tā", definition: "it" },
+            { char: "踢足球", pinyin: "tī zúqiú", definition: "play soccer" },
+            { char: "题", pinyin: "tí", definition: "question" },
+            { char: "跳舞", pinyin: "tiàowǔ", definition: "dance" },
+            { char: "外", pinyin: "wài", definition: "outside" },
+            { char: "完", pinyin: "wán", definition: "finish" },
+            { char: "玩", pinyin: "wán", definition: "play" },
+            { char: "晚上", pinyin: "wǎnshang", definition: "evening" },
+            { char: "为什么", pinyin: "wèishénme", definition: "why" },
+            { char: "问", pinyin: "wèn", definition: "ask" },
+            { char: "问题", pinyin: "wèntí", definition: "question" },
+            { char: "西瓜", pinyin: "xīguā", definition: "watermelon" },
+            { char: "希望", pinyin: "xīwàng", definition: "hope" },
+            { char: "洗", pinyin: "xǐ", definition: "wash" },
+            { char: "小时", pinyin: "xiǎoshí", definition: "hour" },
+            { char: "笑", pinyin: "xiào", definition: "laugh" },
+            { char: "新", pinyin: "xīn", definition: "new" },
+            { char: "姓", pinyin: "xìng", definition: "surname" },
+            { char: "休息", pinyin: "xiūxi", definition: "rest" },
+            { char: "雪", pinyin: "xuě", definition: "snow" },
+            { char: "颜色", pinyin: "yánsè", definition: "color" },
+            { char: "眼睛", pinyin: "yǎnjing", definition: "eye" },
+            { char: "羊肉", pinyin: "yángròu", definition: "lamb" },
+            { char: "药", pinyin: "yào", definition: "medicine" },
+            { char: "要", pinyin: "yào", definition: "want" },
+            { char: "也", pinyin: "yě", definition: "also" },
+            { char: "一下", pinyin: "yíxià", definition: "a moment" },
+            { char: "已经", pinyin: "yǐjīng", definition: "already" },
+            { char: "意思", pinyin: "yìsi", definition: "meaning" },
+            { char: "因为", pinyin: "yīnwèi", definition: "because" },
+            { char: "所以", pinyin: "suǒyǐ", definition: "so" },
+            { char: "阴", pinyin: "yīn", definition: "cloudy" },
+            { char: "游泳", pinyin: "yóuyǒng", definition: "swim" },
+            { char: "右边", pinyin: "yòubiān", definition: "right side" },
+            { char: "鱼", pinyin: "yú", definition: "fish" },
+            { char: "远", pinyin: "yuǎn", definition: "far" },
+            { char: "运动", pinyin: "yùndòng", definition: "exercise" },
+            { char: "再", pinyin: "zài", definition: "again" },
+            { char: "早上", pinyin: "zǎoshang", definition: "morning" },
+            { char: "丈夫", pinyin: "zhàngfu", definition: "husband" },
+            { char: "找", pinyin: "zhǎo", definition: "look for" },
+            { char: "着", pinyin: "zhe", definition: "(action in progress)" },
+            { char: "真", pinyin: "zhēn", definition: "really" },
+            { char: "正在", pinyin: "zhèngzài", definition: "in the process of" },
+            { char: "知道", pinyin: "zhīdào", definition: "know" },
+            { char: "准备", pinyin: "zhǔnbèi", definition: "prepare" },
+            { char: "自行车", pinyin: "zìxíngchē", definition: "bicycle" },
+            { char: "走", pinyin: "zǒu", definition: "walk" },
+            { char: "最", pinyin: "zuì", definition: "most" },
+            { char: "左边", pinyin: "zuǒbiān", definition: "left side" },
+            { char: "坐", pinyin: "zuò", definition: "sit" },
+            { char: "做", pinyin: "zuò", definition: "do" },
+            { char: "作业", pinyin: "zuòyè", definition: "homework" }
+            ],
+            // HSK 3
+            [
+                { char: "阿姨", pinyin: "āyí", definition: "aunt" },
+                { char: "搬", pinyin: "bān", definition: "to move" },
+                { char: "保护", pinyin: "bǎohù", definition: "protect" },
+                { char: "表扬", pinyin: "biǎoyáng", definition: "praise" },
+                { char: "迟到", pinyin: "chídào", definition: "late" }
+            ],
+            JSON.parse(localStorage.getItem('myList')) || []
+        ];
+
+        let level = 0; // 0=HSK1, 1=HSK2, 2=HSK3, 3=MyList
+        let currentWord = null;
+        let displayMode = 0; // 0=char↔pinyin, 1=char(pinyin)↔definition, 2=char↔(pinyin)definition
+        let isFlipped = false;
+        let isRevealed = false;
+        let wordQueue = [];
+        let wordsShown = 0;
+        let dictCount = dictionaries.length;
+        
+        // DOM elements
+        const topCard = document.getElementById('topCard');
+        const bottomCard = document.getElementById('bottomCard');
+        const levelBtn = document.getElementById('levelBtn');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const revealBtn = document.getElementById('revealBtn');
+        const flipBtn = document.getElementById('flipBtn');
+        const modeBtn = document.getElementById('modeBtn');
+        const progress = document.getElementById('progress');
+        const strokeOrderBtn = document.getElementById('strokeOrderBtn');
+        const strokeOrderContainer = document.getElementById('strokeOrderContainer');
+        const strokeOrderLinks = document.getElementById('strokeOrderLinks');
+        const toggleListBtn = document.getElementById('toggleListBtn');
+        const clearListBtn = document.getElementById('clearListBtn');
+
+
+        strokeOrderBtn.addEventListener('click', function() {
+            if (currentWord) {
+                strokeOrderLinks.innerHTML = ''; // Clear previous links
+                
+                // Create a link for each character in the word
+                for (const char of currentWord.char) {
+                    const link = document.createElement('a');
+                    link.className = 'stroke-order-link';
+                    link.href = `https://www.strokeorder.com/chinese/${char}`;
+                    link.textContent = char;
+                    link.target = '_blank';
+                    link.title = `Show stroke order for ${char}`;
+                    strokeOrderLinks.appendChild(link);
+                }
+                
+                strokeOrderContainer.classList.remove('hidden');
+            }
+        });
+        // Initialize
+        resetQueue();
+        showNextWord();
+        
+        // Level button
+        levelBtn.addEventListener('click', async function() {
+            level = (level + 1) % dictCount;
+            levelBtn.textContent = `Current Level: HSK ${level + 1}`;
+            if (level == dictCount - 1) {
+                levelBtn.textContent = `Current Level: My List`;
+            };
+            await hideBottomCard();
+            resetQueue();
+            showNextWord();
+        });
+        
+        // Shuffle button
+        shuffleBtn.addEventListener('click', async function() {
+            await hideBottomCard();
+            resetQueue();
+            showNextWord();
+        });
+        
+        // Next button
+        nextBtn.addEventListener('click', async function() {
+            await hideBottomCard();
+            showNextWord();
+        });
+        
+        // Reveal button
+        revealBtn.addEventListener('click', function() {
+            if (!currentWord) return;
+            isRevealed = !isRevealed;
+            if (isRevealed) {
+                bottomCard.classList.remove('hidden');
+                updateCardContent();
+            } else {
+                hideBottomCard();
+            }
+        });
+        
+        // Flip sides button
+        flipBtn.addEventListener('click', function() {
+            isFlipped = !isFlipped;
+            updateCardContent();
+            updateFlipButtonText();
+        });
+        
+        // Change display mode button
+        modeBtn.addEventListener('click', function() {
+            displayMode = (displayMode + 1) % 3;
+            updateCardContent();
+            updateModeButtonText();
+            updateFlipButtonText();
+        });
+
+        toggleListBtn.addEventListener('click', function() {
+            if (!currentWord) return;
+            
+            let myList = dictionaries[dictCount - 1];
+            var wordIndex = myList.findIndex(w => w.char === currentWord.char);
+            
+            if (wordIndex === -1) {
+                // Add to list
+                myList.push(currentWord);
+                // alert(`Added "${currentWord.char}" to My List`);
+            } else {
+                // Remove from list
+                myList.splice(wordIndex, 1);
+                // alert(`Removed "${currentWord.char}" from My List`);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('myList', JSON.stringify(myList));
+            updateListButtonText();
+            
+            // Refresh if viewing My List
+            if (level === dictCount - 1) {
+                wordQueue = [...myList];
+                wordsShown = 0;
+                showNextWord();
+            }
+        });
+
+        clearListBtn.addEventListener('click', function() {
+            dictionaries[dictCount - 1] = [];
+            let myList = [];
+            localStorage.setItem('myList', JSON.stringify(myList));
+            updateListButtonText();
+            
+            // Refresh if viewing My List
+            if (level === dictCount - 1) {
+                levelBtn.click();
+            }
+            });
+        async function hideBottomCard() {
+            if (!bottomCard.classList.contains('hidden')) {
+                bottomCard.classList.add('hidden');
+                await new Promise(resolve => {
+                    bottomCard.addEventListener('transitionend', resolve, { once: true });
+                });
+            }
+            if (!strokeOrderContainer.classList.contains('hidden')) {
+                strokeOrderContainer.classList.add('hidden');
+                await new Promise(resolve => {
+                    strokeOrderContainer.addEventListener('transitionend', resolve, { once: true });
+                });
+            }
+            isRevealed = false;
+        }
+        
+        function resetQueue() {
+            wordQueue = [...dictionaries[level]];
+            // Fisher-Yates shuffle
+            for (let i = wordQueue.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [wordQueue[i], wordQueue[j]] = [wordQueue[j], wordQueue[i]];
+            }
+            wordsShown = 0;
+            updateProgress();
+        }
+        
+        function showNextWord() {
+            if (wordQueue.length === 0) {
+                resetQueue();
+            }
+            
+            currentWord = wordQueue.pop();
+            wordsShown++;
+            updateModeButtonText();
+            updateFlipButtonText();
+            updateListButtonText();
+            updateProgress();
+            updateCardContent();
+        }
+        
+        function updateCardContent() {
+            if (!currentWord) {
+                topCard.innerHTML = "";
+                bottomCard.innerHTML = "";
+                return;
+            }
+            if (displayMode === 0) {
+                // Character ↔ Pinyin mode
+                if (!isFlipped) {
+                    topCard.innerHTML = currentWord.char;
+                    bottomCard.innerHTML = currentWord.pinyin;
+                } else {
+                    topCard.innerHTML = currentWord.pinyin;
+                    bottomCard.innerHTML = currentWord.char;
+                }
+            } else if (displayMode === 1) {
+                // Character (Pinyin) ↔ Definition mode
+                if (!isFlipped) {
+                    topCard.innerHTML = `${currentWord.char} <span class="pinyin">${currentWord.pinyin}</span>`;
+                    bottomCard.innerHTML = currentWord.definition;
+                } else {
+                    topCard.innerHTML = currentWord.definition;
+                    bottomCard.innerHTML = `${currentWord.char} <span class="pinyin">${currentWord.pinyin}</span>`;
+                }
+            } else {
+                // Character ↔ (Pinyin) Definition mode
+                if (!isFlipped) {
+                    topCard.innerHTML = currentWord.char;
+                    bottomCard.innerHTML = `${currentWord.pinyin}<br><span class="definition">${currentWord.definition}</span>`;
+                } else {
+                    topCard.innerHTML = `${currentWord.pinyin}<br><span class="definition">${currentWord.definition}</span>`;
+                    bottomCard.innerHTML = currentWord.char;
+                }
+            }
+        }
+        
+        function updateModeButtonText() {
+            const modes = [
+                "Mode: Character ↔ Pinyin",
+                "Mode: Character (Pinyin) ↔ Definition",
+                "Mode: Character ↔ (Pinyin) Definition"
+            ];
+            modeBtn.textContent = modes[displayMode];
+        }
+        
+        function updateFlipButtonText() {
+            if (displayMode === 0) {
+                flipBtn.textContent = isFlipped 
+                    ? "Showing: Pinyin → Character" 
+                    : "Showing: Character → Pinyin";
+            } else if (displayMode === 1) {
+                flipBtn.textContent = isFlipped 
+                    ? "Showing: Definition → Character" 
+                    : "Showing: Character → Definition";
+            } else {
+                flipBtn.textContent = isFlipped 
+                    ? "Showing: Pinyin+Def → Character" 
+                    : "Showing: Character → Pinyin+Def";
+            }
+        }
+
+        function updateListButtonText() {
+            if (!currentWord) return;
+            
+            const inList = dictionaries[3].some(w => w.char === currentWord.char);
+            toggleListBtn.textContent = inList ? "Remove from List" : "Add to List";
+            toggleListBtn.classList.toggle('in-list', inList);
+        }
+        
+        function updateProgress() {
+            if(!currentWord) {
+                progress.textContent = "No words in List.";
+                return;
+            }
+            progress.textContent = `${wordsShown}/${dictionaries[level].length} words shown`;
+            if (wordQueue.length === 0) {
+                progress.textContent += " (completed full cycle)";
+            }
+        }
+    </script>
+</body>
+</html>
