@@ -621,17 +621,16 @@
                 // Remove from list
                 myList.splice(wordIndex, 1);
                 // alert(`Removed "${currentWord.char}" from My List`);
-            }
-            
-            // Save to localStorage
-            localStorage.setItem('myList', JSON.stringify(myList));
-            updateListButtonText();
-            
-            // Refresh if viewing My List
-            if (level === dictCount - 1) {
-                wordQueue = [...myList];
-                wordsShown--;
-                showNextWord();
+                
+                // Save to localStorage
+                localStorage.setItem('myList', JSON.stringify(myList));
+                updateListButtonText();
+                
+                // Refresh if viewing My List
+                if (level === dictCount - 1) {
+                    wordsShown--;
+                    showNextWord();
+                }
             }
         });
         addAllBtn.addEventListener('click', function() {
