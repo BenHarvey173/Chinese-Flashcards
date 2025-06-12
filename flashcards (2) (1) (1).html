@@ -624,7 +624,6 @@
                 
                 // Save to localStorage
                 localStorage.setItem('myList', JSON.stringify(myList));
-                updateListButtonText();
                 
                 // Refresh if viewing My List
                 if (level === dictCount - 1) {
@@ -632,6 +631,7 @@
                     showNextWord();
                 }
             }
+            updateListButtonText();
         });
         addAllBtn.addEventListener('click', function() {
             if(level != dictCount - 1 && !(!currentWord)) {
@@ -738,10 +738,11 @@
                             }
                             }
                         }
+                        if (level == dictCount - 1) shuffleBtn.click();
                     });
             } else {
                 clearContainer();
-            } 
+            }
         });
 
         function containsObject(obj, list) {
